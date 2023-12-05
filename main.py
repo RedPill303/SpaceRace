@@ -448,6 +448,3 @@ def toggle_offcanvas(n1, is_open):
 # Run the app
 if __name__ == '__main__':
     app.run(debug=False)
-
-
-# TODO: Check color consistency between graphs
