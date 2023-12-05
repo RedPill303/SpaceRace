@@ -148,6 +148,7 @@ status_options = [{"label": item, "value": (status_list.index(item) + 1)} for it
 
 external_stylesheets = [dbc.themes.CERULEAN]
 app = Dash(__name__, external_stylesheets=external_stylesheets, prevent_initial_callbacks=True)
+server = app.server
 agency_colors = px.colors.qualitative.Dark24
 
 #  Components
