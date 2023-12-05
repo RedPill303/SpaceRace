@@ -3,6 +3,7 @@ import requests
 from datetime import datetime
 import pandas as pd
 import plotly.express as px
+from plotly.colors import n_colors
 from dash import Dash, html, dcc, callback, Output, Input, State, dash_table, callback_context
 import dash_bootstrap_components as dbc
 
@@ -149,7 +150,18 @@ status_options = [{"label": item, "value": (status_list.index(item) + 1)} for it
 external_stylesheets = [dbc.themes.CERULEAN]
 app = Dash(__name__, external_stylesheets=external_stylesheets, prevent_initial_callbacks=True)
 server = app.server
-agency_colors = px.colors.qualitative.Dark24
+
+q_colors = int(len(agency_list)/6)+1
+
+agency_colors = n_colors('rgb(220, 30, 30)', 'rgb(220, 30, 220)', q_colors, colortype='rgb')
+agency_colors.extend(n_colors('rgb(220, 30, 220)', 'rgb(30, 30, 220)', q_colors, colortype='rgb'))
+agency_colors.extend(n_colors('rgb(30, 30, 220)', 'rgb(30, 220, 220)', q_colors, colortype='rgb'))
+agency_colors.extend(n_colors('rgb(30, 220, 220)', 'rgb(30, 220, 30)', q_colors, colortype='rgb'))
+agency_colors.extend(n_colors('rgb(30, 220, 30)', 'rgb(220, 220, 30)', q_colors, colortype='rgb'))
+agency_colors.extend(n_colors('rgb(220, 220, 30)', 'rgb(220, 30, 30)', q_colors, colortype='rgb'))
+
+agency_color_map = {agency: agency_colors[agency_list.index(agency)] for agency in agency_list}
+
 
 #  Components
 
@@ -347,7 +359,7 @@ def update_years(year_range_value,
     ).reset_index()
 
     line = (px.line(filtered_agg_df, x='year', y='count', color='agency',
-                    color_discrete_sequence=agency_colors)
+                    color_discrete_map=agency_color_map)
             .update_layout(legend=dict(traceorder='normal'),
                            title={'text': 'Launches per year by agency', 'x': 0.5})
             .update_traces(hovertemplate='<b>Year</b>: %{x}'
@@ -355,7 +367,7 @@ def update_years(year_range_value,
             )
 
     success_line = (px.line(filtered_outcome_df, x='year', y='roll', color='agency',
-                            color_discrete_sequence=agency_colors)
+                            color_discrete_map=agency_color_map)
                     .update_layout(legend=dict(traceorder='normal'),
                                    title={'text': 'Success ratio (5 year rolling average)', 'x': 0.5})
                     .update_traces(hovertemplate='<b>Year</b>: %{x}<br><b>Success ratio</b>: %{y:.1f}%'))
@@ -364,7 +376,7 @@ def update_years(year_range_value,
     scat2 = (px.scatter(scat2_filtered_df, x='date',
                         y='price(MUSD)',
                         hover_name='name',
-                        color='agency', color_discrete_sequence=agency_colors)
+                        color='agency', color_discrete_map=agency_color_map)
              .update_layout(xaxis_title="Time",
                             yaxis_title="Price (in USD Millions)",
                             legend=dict(traceorder='normal'),
@@ -390,7 +402,7 @@ def update_years(year_range_value,
                        y='payload_leo(kg)',
                        size='thrust(kN)',
                        hover_name='name',
-                       color='agency', color_discrete_sequence=agency_colors)
+                       color='agency', color_discrete_map=agency_color_map)
             .update_layout(xaxis_title="Price (in USD Millions)",
                            yaxis_title="Payload to LEO (kg)",
                            xaxis={'type': 'log'},
@@ -408,7 +420,7 @@ def update_years(year_range_value,
                  y='thrust(kN)',
                  x='agency',
                  color='agency',
-                 color_discrete_sequence=agency_colors,
+                 color_discrete_map=agency_color_map,
                  points=False,
                  notched=True).update_layout(xaxis_title="Agency",
                                              yaxis_title="Thrust (kN)",
