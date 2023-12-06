@@ -173,9 +173,12 @@ jumbotron = html.Div(
         [
             html.H2("Space Race", className="display-3"),
             html.P(
-                ["Rocket and launch info obtained from ",
-                 html.A("NextSpaceFlight", href="https://nextspaceflight.com/")],
+                ["A graphical visualization of space launches from 1957 to the date."],
                 className="lead",
+            ),
+            html.P(
+                ["All rocket and launch info was scraped from ",
+                 html.A("NextSpaceFlight", href="https://nextspaceflight.com/")],
             ),
             html.Hr(className="my-2"),
         ],
