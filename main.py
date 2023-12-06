@@ -1,6 +1,5 @@
 from bs4 import BeautifulSoup
 import requests
-from datetime import datetime
 import pandas as pd
 import plotly.express as px
 from plotly.colors import n_colors
