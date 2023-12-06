@@ -209,7 +209,7 @@ offcanvas = html.Div(
                     html.Hr(),
 
                     dbc.Row([
-                        dbc.Label("Agencies Selection"),
+                        dbc.Label("Quick Selection"),
                         dbc.RadioItems(
                             id="agency-group",
                             className="btn-group my-2",
@@ -217,8 +217,8 @@ offcanvas = html.Div(
                             labelClassName="btn btn-outline-primary",
                             labelCheckedClassName="active",
                             options=[
-                                {"label": "Top 10", "value": 1},
-                                {"label": "All", "value": 2},
+                                {"label": "Top 10 Agencies", "value": 1},
+                                {"label": "All Agencies", "value": 2},
                             ],
                             value=1)
                     ], className="my-2"),
@@ -245,7 +245,7 @@ offcanvas = html.Div(
                             dbc.AccordionItem([
                                 dbc.Checklist(
                                     options=agency_options,
-                                    value=[agency_list.index(item) + 1 for item in agency_list],
+                                    value=[agency_list.index(item) + 1 for item in top_10],
                                     id="agency-checklist-input")
                             ],
                                 title="Agencies"),
@@ -300,12 +300,12 @@ app.layout = dbc.Container([jumbotron, offcanvas,
                                                                  style_table={'overflowX': 'auto',
                                                                               'border': '5px solid #111111'},
                                                                  style_header={
-                                                                        'backgroundColor': 'rgb(40, 40, 40)',
+                                                                        'backgroundColor': '#111111',
                                                                         'color': 'white',
                                                                         'textAlign': 'center'
                                                                     },
                                                                  style_data={
-                                                                        'backgroundColor': 'rgb(60, 60, 60)',
+                                                                        'backgroundColor': 'rgb(40, 40, 40)',
                                                                         'color': 'white',
                                                                         'textAlign': 'left'},
                                                                  ))], xl=8, width=12, className='my-2')
@@ -326,6 +326,8 @@ app.layout = dbc.Container([jumbotron, offcanvas,
         Output('scatter', 'figure'),
         Output('box', 'figure'),
         Output('sunburst', 'figure'),
+        Output('agency-checklist-input', 'value'),
+
     ],
     [Input('year-range', 'value'),
      Input('agency-group', 'value'),
@@ -343,13 +345,35 @@ def update_years(year_range_value,
                  status_checklist_input_value
                  ):
     filtered_df = df[(df['date'].dt.year >= year_range_value[0]) & (df['date'].dt.year <= year_range_value[1])]
-    if agency_group_value == 1:
-        filtered_df = filtered_df[filtered_df['agency'].isin(top_10)]
 
-    filtered_agency_list = [agency_list[i - 1] for i in agency_checklist_input_value]
+    print('agency_group_value: ', agency_group_value)
+
+    trigger = callback_context.triggered[0]
+    print('trigger: ', trigger)
+    print(trigger['prop_id'])
+
+    if trigger['prop_id'] == 'agency-group.value':
+        if agency_group_value == 1:
+            ag_list = [agency_list.index(item) + 1 for item in top_10]
+            print('if')
+        elif agency_group_value == 2:
+            ag_list = [agency_list.index(item) + 1 for item in agency_list]
+            print('elif')
+    else:
+        ag_list = agency_checklist_input_value
+        print('else')
+
+
+    print('ag_list: ', ag_list)
+    print('agency_checklist_input_value: ', agency_checklist_input_value)
+
+    filtered_agency_list = [agency_list[i - 1] for i in ag_list]
     filtered_country_list = [country_list[i - 1] for i in country_checklist_input_value]
     filtered_outcome_list = [outcome_list[i - 1] for i in outcome_checklist_input_value]
     filtered_status_list = [status_list[i - 1] for i in status_checklist_input_value]
+
+    print('filtered_agency_list: ', filtered_agency_list, '\n')
+
 
     filtered_df = filtered_df[filtered_df['agency'].isin(filtered_agency_list)]
     filtered_df = filtered_df[filtered_df['country'].isin(filtered_country_list)]
@@ -383,7 +407,9 @@ def update_years(year_range_value,
     line = (px.line(filtered_agg_df, x='year', y='count', color='agency',
                     color_discrete_map=agency_color_map, template="plotly_dark")
             .update_layout(legend=dict(traceorder='normal'),
-                           title={'text': 'Launches per year by agency', 'x': 0.5}
+                           title={'text': 'Number of Launches per Year', 'x': 0.5},
+                           xaxis_title="Time",
+                           yaxis_title="Number of Launches",
                            )
             .update_traces(hovertemplate='<b>Year</b>: %{x}'
                                          '<br><b>Launches</b>: %{y}')
@@ -392,7 +418,10 @@ def update_years(year_range_value,
     success_line = (px.line(filtered_outcome_df, x='year', y='roll', color='agency',
                             color_discrete_map=agency_color_map, template="plotly_dark")
                     .update_layout(legend=dict(traceorder='normal'),
-                                   title={'text': 'Success ratio (5 year rolling average)', 'x': 0.5})
+                                   title={'text': 'Success Ratio (5 year rolling average)', 'x': 0.5},
+                                   xaxis_title="Time",
+                                   yaxis_title="Success Ratio",
+                                   )
                     .update_traces(hovertemplate='<b>Year</b>: %{x}<br><b>Success ratio</b>: %{y:.1f}%'))
 
     scat2_filtered_df = filtered_df[(filtered_df['price(MUSD)'] > 0)]
@@ -416,7 +445,10 @@ def update_years(year_range_value,
     hist = (px.histogram(filtered_df, x='agency', color='outcome', histfunc='count',
                          hover_name='outcome', template="plotly_dark")
             .update_layout(xaxis={'categoryorder': 'total descending'},
-                           title={'text': 'Total number of launches', 'x': 0.5})
+                           title={'text': 'Total number of launches', 'x': 0.5},
+                           xaxis_title="Agency",
+                           yaxis_title="Number of Launches",
+                           )
             .update_traces(hovertemplate='<b>Agency</b>: %{x}'
                                          '<br><b>Launches</b>: %{y}')
             )
@@ -469,6 +501,7 @@ def update_years(year_range_value,
             scat,
             box,
             sunburst,
+            ag_list
             )
 
 
@@ -485,4 +518,4 @@ def toggle_offcanvas(n1, is_open):
 
 # Run the app
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
