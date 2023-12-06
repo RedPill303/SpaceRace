@@ -147,9 +147,12 @@ status_options = [{"label": item, "value": (status_list.index(item) + 1)} for it
 
 # --DASHBOARD--
 
-external_stylesheets = [dbc.themes.CERULEAN]
-app = Dash(__name__, external_stylesheets=external_stylesheets, prevent_initial_callbacks=True)
+
+dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
+
+app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY, dbc_css], prevent_initial_callbacks=True)
 server = app.server
+app.title = "Space Race"
 
 q_colors = int(len(agency_list)/6)+1
 
@@ -177,10 +180,9 @@ jumbotron = html.Div(
             html.Hr(className="my-2"),
         ],
         fluid=True,
-        className="py-3",
+        className="my-3",
     ),
-    className="p-3 bg-light rounded-3",
-)
+    className="p-3 rounded-3")
 
 offcanvas = html.Div(
     [
@@ -270,24 +272,41 @@ offcanvas = html.Div(
 app.layout = dbc.Container([jumbotron, offcanvas,
 
                             dbc.Row([
-                                dbc.Col(dcc.Graph(figure={}, id='line'), xl=6, width=12),
-                                dbc.Col(dcc.Graph(figure={}, id='success_line'), xl=6, width=12)
+                                dbc.Col(dcc.Graph(figure={}, id='line'), xl=6, width=12, className='my-2'),
+                                dbc.Col(dcc.Graph(figure={}, id='success_line'), xl=6, width=12, className='my-2')
                             ]),
 
                             dbc.Row([
-                                dbc.Col(dcc.Graph(figure={}, id='scatter2'), xl=6, width=12),
-                                dbc.Col(dcc.Graph(figure={}, id='histogram'), xl=6, width=12)
+                                dbc.Col(dcc.Graph(figure={}, id='scatter2'), xl=6, width=12, className='my-2'),
+                                dbc.Col(dcc.Graph(figure={}, id='histogram'), xl=6, width=12, className='my-2')
                             ]),
 
-                            # dbc.Row([
-                            #     dash_table.DataTable(data=None, id='table', page_size=5, style_table={'overflowX': 'auto'})
-                            # ]),
 
                             dbc.Row([
-                                dbc.Col(dcc.Graph(figure={}, id='scatter'), xl=6, width=12),
-                                dbc.Col(dcc.Graph(figure={}, id='box'), xl=6, width=12),
-                                dbc.Col(dcc.Graph(figure={}, id='sunburst'), xl=12, width=12)
-                            ])
+                                dbc.Col(dcc.Graph(figure={}, id='scatter'), xl=6, width=12, className='my-2'),
+                                dbc.Col(dcc.Graph(figure={}, id='box'), xl=6, width=12, className='my-2'),
+                            ]),
+
+                            dbc.Row([
+                                dbc.Col(dcc.Graph(figure={}, id='sunburst'), xl=4, width=12, className='my-2'),
+                                dbc.Col([
+                                        dbc.Row(dbc.Label("Underlying Data", className="text-center pt-2"),
+                                                style={'background-color': '#111111'}, className='mx-0'),
+                                        dbc.Row(dash_table.DataTable(data=None, id='table',
+                                                                 page_size=10,
+                                                                 style_table={'overflowX': 'auto',
+                                                                              'border': '5px solid #111111'},
+                                                                 style_header={
+                                                                        'backgroundColor': 'rgb(40, 40, 40)',
+                                                                        'color': 'white',
+                                                                        'textAlign': 'center'
+                                                                    },
+                                                                 style_data={
+                                                                        'backgroundColor': 'rgb(60, 60, 60)',
+                                                                        'color': 'white',
+                                                                        'textAlign': 'left'},
+                                                                 ))], xl=8, width=12, className='my-2')
+                            ]),
 
                             ], fluid=True)
 
@@ -299,7 +318,7 @@ app.layout = dbc.Container([jumbotron, offcanvas,
         Output('line', 'figure'),
         Output('success_line', 'figure'),
         Output('scatter2', 'figure'),
-        # Output('table', 'data'),
+        Output('table', 'data'),
         Output('histogram', 'figure'),
         Output('scatter', 'figure'),
         Output('box', 'figure'),
@@ -359,15 +378,16 @@ def update_years(year_range_value,
     ).reset_index()
 
     line = (px.line(filtered_agg_df, x='year', y='count', color='agency',
-                    color_discrete_map=agency_color_map)
+                    color_discrete_map=agency_color_map, template="plotly_dark")
             .update_layout(legend=dict(traceorder='normal'),
-                           title={'text': 'Launches per year by agency', 'x': 0.5})
+                           title={'text': 'Launches per year by agency', 'x': 0.5}
+                           )
             .update_traces(hovertemplate='<b>Year</b>: %{x}'
                                          '<br><b>Launches</b>: %{y}')
             )
 
     success_line = (px.line(filtered_outcome_df, x='year', y='roll', color='agency',
-                            color_discrete_map=agency_color_map)
+                            color_discrete_map=agency_color_map, template="plotly_dark")
                     .update_layout(legend=dict(traceorder='normal'),
                                    title={'text': 'Success ratio (5 year rolling average)', 'x': 0.5})
                     .update_traces(hovertemplate='<b>Year</b>: %{x}<br><b>Success ratio</b>: %{y:.1f}%'))
@@ -376,7 +396,7 @@ def update_years(year_range_value,
     scat2 = (px.scatter(scat2_filtered_df, x='date',
                         y='price(MUSD)',
                         hover_name='name',
-                        color='agency', color_discrete_map=agency_color_map)
+                        color='agency', color_discrete_map=agency_color_map, template="plotly_dark")
              .update_layout(xaxis_title="Time",
                             yaxis_title="Price (in USD Millions)",
                             legend=dict(traceorder='normal'),
@@ -388,9 +408,10 @@ def update_years(year_range_value,
                                           '<br><b>Name</b>: %{hovertext}')
              )
 
-    # tab = filtered_df.to_dict('records')
+    tab = filtered_df.to_dict('records')
 
-    hist = (px.histogram(filtered_df, x='agency', color='outcome', histfunc='count', hover_name='outcome')
+    hist = (px.histogram(filtered_df, x='agency', color='outcome', histfunc='count',
+                         hover_name='outcome', template="plotly_dark")
             .update_layout(xaxis={'categoryorder': 'total descending'},
                            title={'text': 'Total number of launches', 'x': 0.5})
             .update_traces(hovertemplate='<b>Agency</b>: %{x}'
@@ -402,7 +423,7 @@ def update_years(year_range_value,
                        y='payload_leo(kg)',
                        size='thrust(kN)',
                        hover_name='name',
-                       color='agency', color_discrete_map=agency_color_map)
+                       color='agency', color_discrete_map=agency_color_map, template="plotly_dark")
             .update_layout(xaxis_title="Price (in USD Millions)",
                            yaxis_title="Payload to LEO (kg)",
                            xaxis={'type': 'log'},
@@ -421,6 +442,7 @@ def update_years(year_range_value,
                  x='agency',
                  color='agency',
                  color_discrete_map=agency_color_map,
+                 template="plotly_dark",
                  points=False,
                  notched=True).update_layout(xaxis_title="Agency",
                                              yaxis_title="Thrust (kN)",
@@ -428,7 +450,7 @@ def update_years(year_range_value,
                                              legend=dict(traceorder='normal'),
                                              title={'text': 'Thrust distribution', 'x': 0.5})
 
-    sunburst = (px.sunburst(filtered_df, path=['country', 'location'], values='count')
+    sunburst = (px.sunburst(filtered_df, path=['country', 'location'], values='count', template="plotly_dark")
                 .update_layout(title={'text': 'Launch sites by country', 'x': 0.5})
                 .update_traces(
                     hovertemplate='<b>Location</b>: %{label}<br>' +
@@ -439,7 +461,7 @@ def update_years(year_range_value,
     return (line,
             success_line,
             scat2,
-            # tab,
+            tab,
             hist,
             scat,
             box,
