@@ -449,7 +449,7 @@ def update_years(year_range_value,
                                           '<br><b>Name</b>: %{hovertext}')
              )
 
-    tab = filtered_df.to_dict('records')
+    tab = filtered_df.sort_values('date', ascending=False).to_dict('records')
 
     hist = (px.histogram(filtered_df, x='agency', color='outcome', histfunc='count',
                          hover_name='outcome', template="plotly_dark")
