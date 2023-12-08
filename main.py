@@ -33,7 +33,7 @@ for n in range(1, n_pages+1):
     launches = past_soup.find_all(class_="launch")
     codes = codes + [launch.get("class")[1][1:] for launch in launches]
 
-    print(f'getting codes page nr {n}: ', codes)
+    print(f'getting codes page nr {n}')
 
 
 existing_codes = []
