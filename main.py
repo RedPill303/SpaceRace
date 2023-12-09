@@ -7,147 +7,147 @@ from dash import Dash, html, dcc, callback, Output, Input, State, dash_table, ca
 import dash_bootstrap_components as dbc
 import csv
 
-#
-# #  --SCRAPING--
-#
-# # GET LAUNCH CODES
-#
-#
-# pages_url = 'https://nextspaceflight.com/launches/past/?search='
-# pages_response = requests.get(pages_url)
-# pages_web = pages_response.text
-# pages_soup = BeautifulSoup(pages_web, "html.parser")
-# pages = pages_soup.find_all(class_="mdc-button mdc-button--raised")[1].get('onclick')
-# pages_index = pages.find('page=')
-# n_pages = int(pages[pages_index+5:pages_index+8])
-#
-# print(f'number of pages: {n_pages}')
-#
-# codes = []
-#
-# for n in range(1, n_pages+1):
-#     past_url = f'https://nextspaceflight.com/launches/past/?page={n}&search='
-#     past_response = requests.get(past_url)
-#     past_web = past_response.text
-#     past_soup = BeautifulSoup(past_web, "html.parser")
-#     launches = past_soup.find_all(class_="launch")
-#     codes = codes + [launch.get("class")[1][1:] for launch in launches]
-#
-#     print(f'getting codes page nr {n}')
-#
-#
-# existing_codes = []
-# new_codes = []
-# try:
-#     with open('codes.csv', 'r', newline='') as file:
-#         csv_reader = csv.reader(file)
-#         for row in csv_reader:
-#             existing_codes.extend(row)
-# except FileNotFoundError:
-#     pass
-#
-# with open('codes.csv', 'a', newline='') as file:
-#     csv_writer = csv.writer(file)
-#     for code in codes:
-#         if code not in existing_codes:
-#             csv_writer.writerow([code])
-#             new_codes.extend([code])
-#
-# print(f'new codes: {new_codes}')
-# # GET DATA FROM EACH NEW LAUNCH CODE
-#
-# data = []
-#
-# for code in new_codes:
-#     print(f'obtaining info: code {code}, nr. {codes.index(code)+1} of {len(codes)}')
-#     details_url = f'https://nextspaceflight.com/launches/details/{code}'
-#     past_response = requests.get(details_url)
-#     details_web = past_response.text
-#     details_soup = BeautifulSoup(details_web, "html.parser")
-#
-#     name = details_soup.find_all(name="h4")[0].getText().strip()
-#     outcome = details_soup.find_all(name="h6", class_='rcorners status')[0].getText().strip()
-#     date = details_soup.find(id='localized').getText().strip() if details_soup.find(id='localized') else None
-#     location = details_soup.find_all(class_="card section--center white mdl-grid mdl-grid--no-spacing mdl-shadow--6dp")[1].find('h4').getText()
-#     country = location.split(", ")[-1]
-#
-#     info = [item.getText().strip().split(": ") for item in details_soup.find_all(class_="mdl-grid a")[1] if item.getText().strip() != ""]
-#     info_dict = {}
-#     for field in info[1:]:
-#         info_dict[field[0]] = field[1]
-#
-#     agency = info[0][0]
-#
-#     status = info_dict.get('Status', None)
-#     price = info_dict.get('Price', None)
-#     thrust = info_dict.get('Liftoff Thrust', None)
-#     payload_leo = info_dict.get('Payload to LEO', None)
-#     payload_gto = info_dict.get('Payload to GTO', None)
-#     stages = info_dict.get('Stages', None)
-#     strap_ons = info_dict.get('Strap-ons', None)
-#     rocket_height = info_dict.get('Rocket Height', None)
-#     fairing_diameter = info_dict.get('Fairing Diameter', None)
-#     fairing_height = info_dict.get('Fairing Height', None)
-#
-#     data_row = [code, name, outcome, date, location, country, agency, status, price, thrust, payload_leo, payload_gto, stages, strap_ons, rocket_height, fairing_diameter, fairing_height]
-#     data.append(data_row)
-#
-# # INITIAL DATAFRAME
-#
-# columns = ['code', 'name', 'outcome', 'date', 'location', 'country', 'agency', 'status', 'price(MUSD)', 'thrust(kN)', 'payload_leo(kg)', 'payload_gto(kg)', 'stages', 'strap_ons', 'rocket_height(m)', 'fairing_diameter(m)', 'fairing_height(m)']
-# df = pd.DataFrame(data, columns=columns)
-#
-# # DATA CLEANING
-#
-# print('cleaning data')
-#
-# df['price(MUSD)'] = df['price(MUSD)'].str.replace(' million', '')
-# df['price(MUSD)'] = df['price(MUSD)'].str.replace('$', '')
-# df['price(MUSD)'] = df['price(MUSD)'].str.replace(',', '')
-# df['price(MUSD)'].fillna(0, inplace=True)
-# df['price(MUSD)'] = df['price(MUSD)'].astype(float)
-#
-# df['thrust(kN)'] = df['thrust(kN)'].str.replace(' kN', '')
-# df['thrust(kN)'] = df['thrust(kN)'].str.replace(',', '')
-# df['thrust(kN)'].fillna(0, inplace=True)
-# df['thrust(kN)'] = df['thrust(kN)'].astype(float)
-#
-# df['payload_leo(kg)'] = df['payload_leo(kg)'].str.replace(' kg', '')
-# df['payload_leo(kg)'] = df['payload_leo(kg)'].str.replace(',', '')
-# df['payload_leo(kg)'].fillna(0, inplace=True)
-# df['payload_leo(kg)'] = df['payload_leo(kg)'].astype(float)
-#
-# df['payload_gto(kg)'] = df['payload_gto(kg)'].str.replace(' kg', '')
-# df['payload_gto(kg)'] = df['payload_gto(kg)'].str.replace(',', '')
-# df['payload_gto(kg)'].fillna(0, inplace=True)
-# df['payload_gto(kg)'] = df['payload_gto(kg)'].astype(float)
-#
-# df['stages'].fillna(0, inplace=True)
-# df['stages'] = df['stages'].astype(int)
-#
-# df['strap_ons'].fillna(0, inplace=True)
-# df['strap_ons'] = df['strap_ons'].astype(int)
-#
-# df['rocket_height(m)'] = df['rocket_height(m)'].str.replace(' m', '')
-# df['rocket_height(m)'] = df['rocket_height(m)'].str.replace(',', '')
-# df['rocket_height(m)'].fillna(0, inplace=True)
-# df['rocket_height(m)'] = df['rocket_height(m)'].astype(float)
-#
-# df['fairing_diameter(m)'] = df['fairing_diameter(m)'].str.replace(' m', '')
-# df['fairing_diameter(m)'] = df['fairing_diameter(m)'].str.replace(',', '')
-# df['fairing_diameter(m)'].fillna(0, inplace=True)
-# df['fairing_diameter(m)'] = df['fairing_diameter(m)'].astype(float)
-#
-# df['fairing_height(m)'] = df['fairing_height(m)'].str.replace(' m', '')
-# df['fairing_height(m)'] = df['fairing_height(m)'].str.replace(',', '')
-# df['fairing_height(m)'].fillna(0, inplace=True)
-# df['fairing_height(m)'] = df['fairing_height(m)'].astype(float)
-#
-#
-# # FINAL DATAFRAME
-#
-# print('saving final data')
-# df.to_csv('clean_output.csv', mode='a', header=False, index=False)
+
+#  --SCRAPING--
+
+# GET LAUNCH CODES
+
+
+pages_url = 'https://nextspaceflight.com/launches/past/?search='
+pages_response = requests.get(pages_url)
+pages_web = pages_response.text
+pages_soup = BeautifulSoup(pages_web, "html.parser")
+pages = pages_soup.find_all(class_="mdc-button mdc-button--raised")[1].get('onclick')
+pages_index = pages.find('page=')
+n_pages = int(pages[pages_index+5:pages_index+8])
+
+print(f'number of pages: {n_pages}')
+
+codes = []
+
+for n in range(1, n_pages+1):
+    past_url = f'https://nextspaceflight.com/launches/past/?page={n}&search='
+    past_response = requests.get(past_url)
+    past_web = past_response.text
+    past_soup = BeautifulSoup(past_web, "html.parser")
+    launches = past_soup.find_all(class_="launch")
+    codes = codes + [launch.get("class")[1][1:] for launch in launches]
+
+    print(f'getting codes page nr {n}')
+
+
+existing_codes = []
+new_codes = []
+try:
+    with open('codes.csv', 'r', newline='') as file:
+        csv_reader = csv.reader(file)
+        for row in csv_reader:
+            existing_codes.extend(row)
+except FileNotFoundError:
+    pass
+
+with open('codes.csv', 'a', newline='') as file:
+    csv_writer = csv.writer(file)
+    for code in codes:
+        if code not in existing_codes:
+            csv_writer.writerow([code])
+            new_codes.extend([code])
+
+print(f'new codes: {new_codes}')
+# GET DATA FROM EACH NEW LAUNCH CODE
+
+data = []
+
+for code in new_codes:
+    print(f'obtaining info: code {code}, nr. {codes.index(code)+1} of {len(codes)}')
+    details_url = f'https://nextspaceflight.com/launches/details/{code}'
+    past_response = requests.get(details_url)
+    details_web = past_response.text
+    details_soup = BeautifulSoup(details_web, "html.parser")
+
+    name = details_soup.find_all(name="h4")[0].getText().strip()
+    outcome = details_soup.find_all(name="h6", class_='rcorners status')[0].getText().strip()
+    date = details_soup.find(id='localized').getText().strip() if details_soup.find(id='localized') else None
+    location = details_soup.find_all(class_="card section--center white mdl-grid mdl-grid--no-spacing mdl-shadow--6dp")[1].find('h4').getText()
+    country = location.split(", ")[-1]
+
+    info = [item.getText().strip().split(": ") for item in details_soup.find_all(class_="mdl-grid a")[1] if item.getText().strip() != ""]
+    info_dict = {}
+    for field in info[1:]:
+        info_dict[field[0]] = field[1]
+
+    agency = info[0][0]
+
+    status = info_dict.get('Status', None)
+    price = info_dict.get('Price', None)
+    thrust = info_dict.get('Liftoff Thrust', None)
+    payload_leo = info_dict.get('Payload to LEO', None)
+    payload_gto = info_dict.get('Payload to GTO', None)
+    stages = info_dict.get('Stages', None)
+    strap_ons = info_dict.get('Strap-ons', None)
+    rocket_height = info_dict.get('Rocket Height', None)
+    fairing_diameter = info_dict.get('Fairing Diameter', None)
+    fairing_height = info_dict.get('Fairing Height', None)
+
+    data_row = [code, name, outcome, date, location, country, agency, status, price, thrust, payload_leo, payload_gto, stages, strap_ons, rocket_height, fairing_diameter, fairing_height]
+    data.append(data_row)
+
+# INITIAL DATAFRAME
+
+columns = ['code', 'name', 'outcome', 'date', 'location', 'country', 'agency', 'status', 'price(MUSD)', 'thrust(kN)', 'payload_leo(kg)', 'payload_gto(kg)', 'stages', 'strap_ons', 'rocket_height(m)', 'fairing_diameter(m)', 'fairing_height(m)']
+df = pd.DataFrame(data, columns=columns)
+
+# DATA CLEANING
+
+print('cleaning data')
+
+df['price(MUSD)'] = df['price(MUSD)'].str.replace(' million', '')
+df['price(MUSD)'] = df['price(MUSD)'].str.replace('$', '')
+df['price(MUSD)'] = df['price(MUSD)'].str.replace(',', '')
+df['price(MUSD)'].fillna(0, inplace=True)
+df['price(MUSD)'] = df['price(MUSD)'].astype(float)
+
+df['thrust(kN)'] = df['thrust(kN)'].str.replace(' kN', '')
+df['thrust(kN)'] = df['thrust(kN)'].str.replace(',', '')
+df['thrust(kN)'].fillna(0, inplace=True)
+df['thrust(kN)'] = df['thrust(kN)'].astype(float)
+
+df['payload_leo(kg)'] = df['payload_leo(kg)'].str.replace(' kg', '')
+df['payload_leo(kg)'] = df['payload_leo(kg)'].str.replace(',', '')
+df['payload_leo(kg)'].fillna(0, inplace=True)
+df['payload_leo(kg)'] = df['payload_leo(kg)'].astype(float)
+
+df['payload_gto(kg)'] = df['payload_gto(kg)'].str.replace(' kg', '')
+df['payload_gto(kg)'] = df['payload_gto(kg)'].str.replace(',', '')
+df['payload_gto(kg)'].fillna(0, inplace=True)
+df['payload_gto(kg)'] = df['payload_gto(kg)'].astype(float)
+
+df['stages'].fillna(0, inplace=True)
+df['stages'] = df['stages'].astype(int)
+
+df['strap_ons'].fillna(0, inplace=True)
+df['strap_ons'] = df['strap_ons'].astype(int)
+
+df['rocket_height(m)'] = df['rocket_height(m)'].str.replace(' m', '')
+df['rocket_height(m)'] = df['rocket_height(m)'].str.replace(',', '')
+df['rocket_height(m)'].fillna(0, inplace=True)
+df['rocket_height(m)'] = df['rocket_height(m)'].astype(float)
+
+df['fairing_diameter(m)'] = df['fairing_diameter(m)'].str.replace(' m', '')
+df['fairing_diameter(m)'] = df['fairing_diameter(m)'].str.replace(',', '')
+df['fairing_diameter(m)'].fillna(0, inplace=True)
+df['fairing_diameter(m)'] = df['fairing_diameter(m)'].astype(float)
+
+df['fairing_height(m)'] = df['fairing_height(m)'].str.replace(' m', '')
+df['fairing_height(m)'] = df['fairing_height(m)'].str.replace(',', '')
+df['fairing_height(m)'].fillna(0, inplace=True)
+df['fairing_height(m)'] = df['fairing_height(m)'].astype(float)
+
+
+# FINAL DATAFRAME
+
+print('saving final data')
+df.to_csv('clean_output.csv', mode='a', header=False, index=False)
 df = pd.read_csv(f'clean_output.csv')
 
 df["date"] = pd.to_datetime(df["date"])
@@ -174,7 +174,6 @@ status_options = [{"label": item, "value": (status_list.index(item) + 1)} for it
 dbc_css = "https://cdn.jsdelivr.net/gh/AnnMarieW/dash-bootstrap-templates/dbc.min.css"
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY, dbc_css], prevent_initial_callbacks=True)
-server = app.server
 app.title = "Space Race"
 
 q_colors = int(len(agency_list)/6)+1
@@ -391,7 +390,7 @@ def update_years(year_range_value,
 
     filtered_outcome_df = filtered_df.pivot_table(index=['year', 'agency'], columns='outcome', values='count',
                                                   aggfunc='sum', fill_value=0).reset_index()
-    required_keys = ['Success', 'Failure', 'Partial Failure', 'Prelaunch Failure']
+    required_keys = ['Success', 'Fa ilure', 'Partial Failure', 'Prelaunch Failure']
     existing_keys = [key for key in required_keys if key in filtered_outcome_df.columns]
 
     if 'Success' in filtered_outcome_df.columns:
@@ -419,6 +418,7 @@ def update_years(year_range_value,
                            title={'text': 'Number of Launches per Year', 'x': 0.5},
                            xaxis_title="Time",
                            yaxis_title="Number of Launches",
+                           margin={'t': 100}
                            )
             .update_traces(hovertemplate='<b>Year</b>: %{x}'
                                          '<br><b>Launches</b>: %{y}')
@@ -430,6 +430,7 @@ def update_years(year_range_value,
                                    title={'text': 'Success Ratio Over Time', 'x': 0.5},
                                    xaxis_title="Time",
                                    yaxis_title="Success Ratio (5 year rolling average)",
+                                   margin={'t': 100}
                                    )
                     .update_traces(hovertemplate='<b>Year</b>: %{x}<br><b>Success ratio</b>: %{y:.1f}%'))
 
@@ -442,7 +443,8 @@ def update_years(year_range_value,
                             yaxis_title="Price (in USD Millions)",
                             legend=dict(traceorder='normal'),
                             yaxis={'type': 'log'},
-                            title={'text': 'Price distribution over time', 'x': 0.5}
+                            title={'text': 'Price distribution over time', 'x': 0.5},
+                            margin={'t': 100}
                             )
              .update_traces(hovertemplate='<b>Year</b>: %{x}'
                                           '<br><b>Price (MUSD)</b>: %{y}'
@@ -457,6 +459,7 @@ def update_years(year_range_value,
                            title={'text': 'Total number of launches', 'x': 0.5},
                            xaxis_title="Agency",
                            yaxis_title="Number of Launches",
+                           margin={'t': 100}
                            )
             .update_traces(hovertemplate='<b>Agency</b>: %{x}'
                                          '<br><b>Launches</b>: %{y}')
@@ -472,7 +475,8 @@ def update_years(year_range_value,
                            yaxis_title="Payload to LEO (kg)",
                            xaxis={'type': 'log'},
                            legend=dict(traceorder='normal'),
-                           title={'text': 'Price vs. Payload to LEO', 'x': 0.5}
+                           title={'text': 'Price vs. Payload to LEO', 'x': 0.5},
+                           margin={'t': 100}
                            )
             .update_traces(hovertemplate='<b>Name</b>: %{hovertext}' +
                                          '<br><b>Price</b>: %{x:.2f} MUSD' +
@@ -492,10 +496,11 @@ def update_years(year_range_value,
                                              yaxis_title="Thrust (kN)",
                                              yaxis=dict(type='log'),
                                              legend=dict(traceorder='normal'),
-                                             title={'text': 'Thrust Distribution', 'x': 0.5})
+                                             title={'text': 'Thrust Distribution', 'x': 0.5},
+                                             margin={'t': 100})
 
     sunburst = (px.sunburst(filtered_df, path=['country', 'location'], values='count', template="plotly_dark")
-                .update_layout(title={'text': 'Launch Sites', 'x': 0.5})
+                .update_layout(title={'text': 'Launch Sites', 'x': 0.5}, margin={'t': 100})
                 .update_traces(
                     hovertemplate='<b>Location</b>: %{label}<br>' +
                                   '<b>Count</b>: %{value}'
